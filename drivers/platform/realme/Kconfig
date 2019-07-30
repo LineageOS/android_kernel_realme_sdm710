@@ -1,0 +1,11 @@
+config MACH_REALME
+       bool "realme device"
+
+config MACH_REALME_SDM710
+       bool "realme sdm710"
+       select MACH_REALME
+       depends on ARCH_SDM670
+
+config MACH_REALME_RMX1851
+       bool "realme 3 Pro"
+       select MACH_REALME_SDM710

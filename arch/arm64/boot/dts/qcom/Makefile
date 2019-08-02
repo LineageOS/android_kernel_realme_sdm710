@@ -1,3 +1,14 @@
+ifeq ($(CONFIG_MACH_REALME_SDM710),y)
+ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
+	dtbo-$(CONFIG_MACH_REALME_RMX1851) += \
+		sdm710-RMX1851-overlay.dtbo
+
+sdm710-RMX1851-overlay.dtbo-base := sdm710-RMX1851.dtb
+else
+dtb-$(CONFIG_MACH_REALME_RMX1851) += \
+	sdm710-RMX1851.dtb
+endif
+else
 dtb-$(CONFIG_ARCH_QCOM)	+= apq8016-sbc.dtb msm8916-mtp.dtb
 dtb-$(CONFIG_ARCH_QCOM)	+= msm8996-mtp.dtb
 dtb-$(CONFIG_ARCH_QCOM)	+= apq8096-db820c.dtb
@@ -632,6 +643,7 @@ dtb-$(CONFIG_ARCH_SDM429) += sdm429-mtp.dtb \
 	sda429-mtp.dtb \
 	sda429-cdp.dtb
 
+endif
 endif
 
 always		:= $(dtb-y)

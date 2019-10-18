@@ -66,6 +66,8 @@ static struct sde_pingpong_cfg *_pingpong_offset(enum sde_pingpong pp,
 	return ERR_PTR(-EINVAL);
 }
 
+#ifndef VENDOR_EDIT
+/*liping-m@PSW.MM.Display.Lcd.Stability,2018/9/26,for solve te sync issue at doze*/
 static int sde_hw_pp_setup_te_config(struct sde_hw_pingpong *pp,
 		struct sde_hw_tear_check *te)
 {
@@ -95,6 +97,46 @@ static int sde_hw_pp_setup_te_config(struct sde_hw_pingpong *pp,
 
 	return 0;
 }
+#else /*VENDOR_EDIT*/
+
+
+static int sde_hw_pp_setup_te_config(struct sde_hw_pingpong *pp,
+		struct sde_hw_tear_check *te)
+{
+	struct sde_hw_blk_reg_map *c;
+	int cfg;
+	int temp_vclks_line;
+
+	if (!pp || !te)
+		return -EINVAL;
+	c = &pp->hw;
+
+	cfg = BIT(19); /*VSYNC_COUNTER_EN */
+	if (te->hw_vsync_mode)
+		cfg |= BIT(20);
+
+	temp_vclks_line = te->vsync_count;
+
+
+	temp_vclks_line = temp_vclks_line * 60 * 100 / 6000;
+
+
+	cfg |= temp_vclks_line;
+
+	SDE_REG_WRITE(c, PP_SYNC_CONFIG_VSYNC, cfg);
+	SDE_REG_WRITE(c, PP_SYNC_CONFIG_HEIGHT, te->sync_cfg_height);
+	SDE_REG_WRITE(c, PP_VSYNC_INIT_VAL, te->vsync_init_val);
+	SDE_REG_WRITE(c, PP_RD_PTR_IRQ, te->rd_ptr_irq);
+	SDE_REG_WRITE(c, PP_START_POS, te->start_pos);
+	SDE_REG_WRITE(c, PP_SYNC_THRESH,
+			((te->sync_threshold_continue << 16) |
+			 te->sync_threshold_start));
+	SDE_REG_WRITE(c, PP_SYNC_WRCOUNT,
+			(te->start_pos + te->sync_threshold_start + 1));
+
+	return 0;
+}
+#endif /*VENDOR_EDIT*/
 
 static int sde_hw_pp_setup_autorefresh_config(struct sde_hw_pingpong *pp,
 		struct sde_hw_autorefresh *cfg)

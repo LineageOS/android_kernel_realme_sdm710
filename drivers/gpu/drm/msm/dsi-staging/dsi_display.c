@@ -32,6 +32,15 @@
 #include "dsi_pwr.h"
 #include "sde_dbg.h"
 
+#ifdef VENDOR_EDIT
+/*liping-m@PSW.MM.Display.Lcd.Stability, 2018-09-26,add for drm notifier for display connect*/
+#include <linux/msm_drm_notify.h>
+#include <linux/notifier.h>
+
+extern int msm_drm_notifier_call_chain(unsigned long val, void *v);
+
+#endif
+
 #define to_dsi_display(x) container_of(x, struct dsi_display, host)
 #define INT_BASE_10 10
 #define NO_OVERRIDE -1
@@ -146,7 +155,10 @@ int dsi_display_set_backlight(void *display, u32 bl_lvl)
 	u32 bl_scale, bl_scale_ad;
 	u64 bl_temp;
 	int rc = 0;
-
+        #ifdef VENDOR_EDIT
+        /*caiwutang@MM.Display.LCD.Feature,2019-03-07 add for cabc feature */
+        static bool need_cabc = true;
+        #endif /* VENDOR_EDIT */
 	if (dsi_display == NULL || dsi_display->panel == NULL)
 		return -EINVAL;
 
@@ -158,7 +170,44 @@ int dsi_display_set_backlight(void *display, u32 bl_lvl)
 		goto error;
 	}
 
+        #ifdef VENDOR_EDIT
+        if (bl_lvl != 0 && panel->bl_config.bl_level == 0)
+        /*caiwutang@MM.Display.LCD.Feature,2019-03-07 add for cabc feature */
+                need_cabc = true;
+        else
+                need_cabc = false;
+        #endif /* VENDOR_EDIT */
+
+	#ifdef VENDOR_EDIT
+	/*liping-m@PSW.MM.Display.LCD.Feature,2018-09-26 add some delay to avoid screen flash */
+        if ((bl_lvl == 0 && panel->bl_config.bl_level != 0) ||
+                (bl_lvl != 0 && panel->bl_config.bl_level == 0))
+                pr_info("backlight level changed %d -> %d\n",
+                          panel->bl_config.bl_level, bl_lvl);
+
+	if (panel->type != EXT_BRIDGE) {
+		rc = dsi_display_clk_ctrl(dsi_display->dsi_clk_handle,
+			DSI_CORE_CLK, DSI_CLK_ON);
+		if (rc) {
+			pr_err("[%s] failed to send DSI_CMD_POST_ON_BACKLIGHT cmds, rc=%d\n",
+			       panel->name, rc);
+			goto error;
+		}
+
+		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_POST_ON_BACKLIGHT);
+
+		rc = dsi_display_clk_ctrl(dsi_display->dsi_clk_handle,
+			DSI_CORE_CLK, DSI_CLK_OFF);
+		if (rc) {
+			pr_err("[%s] failed to send DSI_CMD_POST_ON_BACKLIGHT cmds, rc=%d\n",
+			       panel->name, rc);
+			goto error;
+		}
+	}
+	#endif /* VENDOR_EDIT */
+
 	panel->bl_config.bl_level = bl_lvl;
+
 
 	/* scale backlight */
 	bl_scale = panel->bl_config.bl_scale;
@@ -195,7 +244,11 @@ error:
 	return rc;
 }
 
+#ifndef VENDOR_EDIT
 static int dsi_display_cmd_engine_enable(struct dsi_display *display)
+#else
+int dsi_display_cmd_engine_enable(struct dsi_display *display)
+#endif
 {
 	int rc = 0;
 	int i;
@@ -239,7 +292,11 @@ done:
 	return rc;
 }
 
+#ifndef VENDOR_EDIT
 static int dsi_display_cmd_engine_disable(struct dsi_display *display)
+#else
+int dsi_display_cmd_engine_disable(struct dsi_display *display)
+#endif
 {
 	int rc = 0;
 	int i;
@@ -435,7 +492,11 @@ static bool dsi_display_is_te_based_esd(struct dsi_display *display)
 }
 
 /* Allocate memory for cmd dma tx buffer */
+#ifndef VENDOR_EDIT
 static int dsi_host_alloc_cmd_tx_buffer(struct dsi_display *display)
+#else
+int dsi_host_alloc_cmd_tx_buffer(struct dsi_display *display)
+#endif
 {
 	int rc = 0, cnt = 0;
 	struct dsi_display_ctrl *display_ctrl;
@@ -571,8 +632,11 @@ static int dsi_display_read_status(struct dsi_display_ctrl *ctrl,
 	int i, rc = 0, count = 0, start = 0, *lenp;
 	struct drm_panel_esd_config *config;
 	struct dsi_cmd_desc *cmds;
-	u32 flags = 0;
-
+        u32 flags = 0;
+        #ifdef VENDOR_EDIT
+        //caiwutang@RM.Display.LCD.Machine for debug esd
+        int j = 0;
+        #endif
 	if (!panel || !ctrl || !ctrl->ctrl)
 		return -EINVAL;
 
@@ -606,7 +670,12 @@ static int dsi_display_read_status(struct dsi_display_ctrl *ctrl,
 			pr_err("rx cmd transfer failed rc=%d\n", rc);
 			return rc;
 		}
-
+                #ifdef VENDOR_EDIT
+                //caiwutang@RM.Display.LCD.Machine for debug esd
+                for(j=0;j< lenp[i];j++) {
+                    pr_debug("esd read return cmd [%d] = %x\n",i,(u8)*(config->return_buf+j));
+                }
+                #endif
 		memcpy(config->return_buf + start,
 			config->status_buf, lenp[i]);
 		start += lenp[i];
@@ -970,6 +1039,22 @@ static bool dsi_display_get_cont_splash_status(struct dsi_display *display)
 	}
 	return true;
 }
+
+//#ifdef VENDOR_EDIT
+/*liping-mo@PSW.MM.Display.Lcd.Stability, 2018-09-26,add to mark power states*/
+/**
+*For kernel space :
+*SDE_MODE_DPMS_ON	0
+*SDE_MODE_DPMS_LP1	1
+*SDE_MODE_DPMS_LP2	2
+*SDE_MODE_DPMS_STANDBY 3
+*SDE_MODE_DPMS_SUSPEND 4
+*SDE_MODE_DPMS_OFF	5
+*
+*For user space:
+*DOZE, 1
+*DOZE_SUSPEND, 2
+*/
 
 int dsi_display_set_power(struct drm_connector *connector,
 		int power_mode, void *disp)
@@ -5128,7 +5213,13 @@ int dsi_display_dev_probe(struct platform_device *pdev)
 		if (rc)
 			pr_err("component add failed, rc=%d\n", rc);
 
+		#ifndef VENDOR_EDIT
+		/*Mark.Yao@PSW.MM.Display.Lcd.Stability, 2018-05-31,add a key log for display probe*/
 		pr_debug("Component_add success: %s\n", display->name);
+		#else
+		pr_err("Component_add success: %s\n", display->name);
+		#endif
+
 		if (!strcmp(display->display_type, "primary"))
 			primary_active_node = pdev->dev.of_node;
 		else
@@ -6615,7 +6706,8 @@ int dsi_display_enable(struct dsi_display *display)
 {
 	int rc = 0;
 	struct dsi_display_mode *mode;
-
+	int blank;
+	struct msm_drm_notifier notifier_data;
 	if (!display || !display->panel) {
 		pr_err("Invalid params\n");
 		return -EINVAL;
@@ -6626,7 +6718,15 @@ int dsi_display_enable(struct dsi_display *display)
 		return -EINVAL;
 	}
 	SDE_EVT32(SDE_EVTLOG_FUNC_ENTRY);
-
+	
+	blank = MSM_DRM_BLANK_UNBLANK;
+	notifier_data.data = &blank;
+	notifier_data.id = 0;
+	msm_drm_notifier_call_chain(MSM_DRM_EARLY_EVENT_BLANK,
+					&notifier_data);
+	
+	msm_drm_notifier_call_chain(MSM_DRM_EVENT_BLANK,
+					&notifier_data);
 	/* Engine states and panel states are populated during splash
 	 * resource init and hence we return early
 	 */
@@ -6768,13 +6868,26 @@ int dsi_display_pre_disable(struct dsi_display *display)
 int dsi_display_disable(struct dsi_display *display)
 {
 	int rc = 0;
+#ifdef VENDOR_EDIT
+/*liping-m@PSW.MM.Display.LCD.Stability, 2018-09-26, add a notify for when disable display*/
+	int blank;
+	struct msm_drm_notifier notifier_data;
+#endif
 
 	if (!display) {
 		pr_err("Invalid params\n");
 		return -EINVAL;
 	}
 
-	SDE_EVT32(SDE_EVTLOG_FUNC_ENTRY);
+#ifdef VENDOR_EDIT
+/*liping-m@PSW.MM.Display.LCD.Stability, 2018-09-26, add a notify for when disable display*/
+	blank = MSM_DRM_BLANK_POWERDOWN;
+	notifier_data.data = &blank;
+	notifier_data.id = 0;
+	msm_drm_notifier_call_chain(MSM_DRM_EARLY_EVENT_BLANK,
+					&notifier_data);
+#endif
+
 	mutex_lock(&display->display_lock);
 
 	rc = dsi_display_wake_up(display);
@@ -6890,6 +7003,14 @@ int dsi_display_unprepare(struct dsi_display *display)
 	SDE_EVT32(SDE_EVTLOG_FUNC_EXIT);
 	return rc;
 }
+
+#ifdef VENDOR_EDIT
+//*liping-m@PSW.MM.Display.LCD.Stability,2018/9/26,add for support aod,hbm,seed*/
+struct dsi_display *get_main_display(void) {
+		return primary_display;
+}
+EXPORT_SYMBOL(get_main_display);
+#endif
 
 static int __init dsi_display_register(void)
 {

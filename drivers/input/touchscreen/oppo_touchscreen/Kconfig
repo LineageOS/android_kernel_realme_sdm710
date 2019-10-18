@@ -1,0 +1,24 @@
+config TOUCHIRQ_UPDATE_QOS
+	bool "OPPO touchpanel driver update qos"
+	help
+	  Say Y here if you want to update qos value in irq handler.
+
+config TOUCHPANEL_OPPO
+	bool "OPPO tp module"
+	help
+	  Say Y here if you have touchscreen module.
+
+config TOUCHPANEL_MULTI_NOFLASH
+	bool "Multiple noflash TPs using"
+	help
+	  Say Y here if you have multiple noflash touchscreen.
+
+config TOUCHPANEL_HIMAX
+	bool "TP HIMAX_IC enable or not for OPPO"
+	---help---
+	say Y to enable driver for Touchpanel using HIMAX_IC
+
+if TOUCHPANEL_HIMAX
+source "drivers/input/touchscreen/oppo_touchscreen/Himax/Kconfig"
+endif
+

@@ -1,4 +1,4 @@
-/* Copyright (c) 2016-2017, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -10,20 +10,14 @@
  * GNU General Public License for more details.
  */
 
-/* Disable WLED */
-&pm660l_wled {
-	status = "okay";
-};
+/dts-v1/;
 
-/* disable LCDB */
-&pm660l_lcdb {
-	status = "okay";
-};
+#include "sdm710.dtsi"
 
-&pm660a_oledb {
-	status = "okay";
-};
-
-&pm660a_labibb {
-	status = "okay";
+/ {
+	model = "Qualcomm Technologies, Inc. SDM710 SoC";
+	compatible = "qcom,sdm670";
+	qcom,board-id = <0 0>;
+	/*oppo,prjversion. first one is the count of projects*/
+	oppo,prjversion = <1 18621>;
 };

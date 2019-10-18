@@ -60,10 +60,26 @@
 			<&clock_gcc GCC_QUPV3_WRAP_0_M_AHB_CLK>,
 			<&clock_gcc GCC_QUPV3_WRAP_0_S_AHB_CLK>;
 		pinctrl-names = "default", "sleep";
-		pinctrl-0 = <&qupv3_se7_4uart_active>;
-		pinctrl-1 = <&qupv3_se7_4uart_sleep>;
-		interrupts-extended = <&pdc GIC_SPI 608 0>,
-				<&tlmm 96 0>;
+		/* #ifndef VENDOR_EDIT */
+		/* Jianfeng.Qiu@PSW.MM.AudioDriver.Codec.1427306, 2018/06/18, Modify for uart gpio configure different config */
+		//pinctrl-0 = <&qupv3_se7_4uart_active>;
+		//pinctrl-1 = <&qupv3_se7_4uart_sleep>;
+		/* #else VENDOR_EDIT */
+		
+		/* tangshaoqing@RM.BSP.DRV 2018/11/22, Modify for SDCARD SD ENT gpio 96 */
+		//pinctrl-0 = <&qupv3_se7_4uart_tx_active>, <&qupv3_se7_4uart_rx_active>;
+		//pinctrl-1 = <&qupv3_se7_4uart_tx_sleep>, <&qupv3_se7_4uart_rx_sleep>;
+		pinctrl-0 = <&qupv3_se7_4uart_tx_active>;
+		pinctrl-1 = <&qupv3_se7_4uart_tx_sleep>;
+		/* #endif VENDOR_EDIT */
+
+		/* #ifndef VENDOR_EDIT */
+		/* tangshaoqing@RM.BSP.DRV 2018/11/22, Modify for SDCARD SD ENT gpio 96 */
+		//interrupts-extended = <&pdc GIC_SPI 608 0>,
+		//		<&tlmm 96 0>;
+		/* #else VENDOR_EDIT */
+		interrupts-extended = <&pdc GIC_SPI 608 0>;
+		/* #endif VENDOR_EDIT */
 		status = "disabled";
 		qcom,wakeup-byte = <0xFD>;
 		qcom,wrapper-core = <&qupv3_0>;
@@ -167,7 +183,12 @@
 		pinctrl-0 = <&qupv3_se4_i2c_active>;
 		pinctrl-1 = <&qupv3_se4_i2c_sleep>;
 		qcom,wrapper-core = <&qupv3_0>;
-		status = "disabled";
+		/* #ifndef VENDOR_EDIT */
+		/* Huiqun.Han@PSW.MM.AudioDriver.Machine, 2018/06/28, Add for audio driver*/
+		//status = "disabled";
+		/* #else  VENDOR_EDIT */
+		status = "ok";
+		/* #endif VENDOR_EDIT */
 	};
 
 	qupv3_se5_i2c: i2c@894000 {
@@ -285,9 +306,14 @@
 		clocks = <&clock_gcc GCC_QUPV3_WRAP0_S2_CLK>,
 			<&clock_gcc GCC_QUPV3_WRAP_0_M_AHB_CLK>,
 			<&clock_gcc GCC_QUPV3_WRAP_0_S_AHB_CLK>;
+		/* #ifndef VENDOR_EDIT */
+		/* Huiqun.Han@PSW.MM.AudioDriver.Machine, 2018/07/03, Delete for audio use gpio29 */
+		/*
 		pinctrl-names = "default", "sleep";
 		pinctrl-0 = <&qupv3_se2_spi_active>;
 		pinctrl-1 = <&qupv3_se2_spi_sleep>;
+		*/
+		/* #endif  VENDOR_EDIT */
 		interrupts = <GIC_SPI 603 0>;
 		spi-max-frequency = <50000000>;
 		qcom,wrapper-core = <&qupv3_0>;
@@ -329,9 +355,14 @@
 		clocks = <&clock_gcc GCC_QUPV3_WRAP0_S4_CLK>,
 			<&clock_gcc GCC_QUPV3_WRAP_0_M_AHB_CLK>,
 			<&clock_gcc GCC_QUPV3_WRAP_0_S_AHB_CLK>;
+		/* #ifndef VENDOR_EDIT */
+		/* Huiqun.Han@PSW.MM.AudioDriver.Machine, 2018/06/28, Add for audio driver*/
+		/*
 		pinctrl-names = "default", "sleep";
 		pinctrl-0 = <&qupv3_se4_spi_active>;
 		pinctrl-1 = <&qupv3_se4_spi_sleep>;
+		*/
+		/* #endif VENDOR_EDIT */
 		interrupts = <GIC_SPI 605 0>;
 		spi-max-frequency = <50000000>;
 		qcom,wrapper-core = <&qupv3_0>;
@@ -395,9 +426,14 @@
 		clocks = <&clock_gcc GCC_QUPV3_WRAP0_S7_CLK>,
 			<&clock_gcc GCC_QUPV3_WRAP_0_M_AHB_CLK>,
 			<&clock_gcc GCC_QUPV3_WRAP_0_S_AHB_CLK>;
+		/* #ifndef VENDOR_EDIT */
+		/* Jianfeng.Qiu@PSW.MM.AudioDriver.Codec.1410301, 2018/06/04, Delete for smart mic use these GPIO */
+		/*
 		pinctrl-names = "default", "sleep";
 		pinctrl-0 = <&qupv3_se7_spi_active>;
 		pinctrl-1 = <&qupv3_se7_spi_sleep>;
+		*/
+		/* #endif  VENDOR_EDIT */
 		interrupts = <GIC_SPI 608 0>;
 		spi-max-frequency = <50000000>;
 		qcom,wrapper-core = <&qupv3_0>;
@@ -432,9 +468,14 @@
 		clocks = <&clock_gcc GCC_QUPV3_WRAP1_S1_CLK>,
 			<&clock_gcc GCC_QUPV3_WRAP_1_M_AHB_CLK>,
 			<&clock_gcc GCC_QUPV3_WRAP_1_S_AHB_CLK>;
+/* #ifdef VENDOR_EDIT */
+/* Huiqun.Han@PSW.MM.AudioDriver.Machine, 2018/06/28, Add for smart mic driver, gpio 5*/
+/*
 		pinctrl-names = "default", "sleep";
 		pinctrl-0 = <&qupv3_se9_2uart_active>;
 		pinctrl-1 = <&qupv3_se9_2uart_sleep>;
+*/
+/* #endif VENDOR_EDIT */
 		interrupts = <GIC_SPI 354 0>;
 		qcom,wrapper-core = <&qupv3_1>;
 		status = "disabled";
@@ -488,9 +529,14 @@
 		dmas = <&gpi_dma1 0 0 3 64 0>,
 			<&gpi_dma1 1 0 3 64 0>;
 		dma-names = "tx", "rx";
+		/* #ifndef VENDOR_EDIT */
+		/* Jianfeng.Qiu@PSW.MM.AudioDriver.Machine, 2018/05/15, Delete for smart mic i2s */
+		/*
 		pinctrl-names = "default", "sleep";
 		pinctrl-0 = <&qupv3_se8_i2c_active>;
 		pinctrl-1 = <&qupv3_se8_i2c_sleep>;
+		*/
+		/* #endif VENDOR_EDIT */
 		qcom,wrapper-core = <&qupv3_1>;
 		status = "disabled";
 	};
@@ -532,6 +578,9 @@
 		pinctrl-0 = <&qupv3_se10_i2c_active>;
 		pinctrl-1 = <&qupv3_se10_i2c_sleep>;
 		qcom,wrapper-core = <&qupv3_1>;
+///#ifdef VENDOR_EDIT//Fanhong.Kong@ProDrv.CHG,add 2018/04/20 for SVOOC		
+		qcom,clk-freq-out = <100000>;
+//#endif /*VENDOR_EDIT*/
 		status = "disabled";
 	};
 
@@ -568,9 +617,14 @@
 		dmas = <&gpi_dma1 0 4 3 64 0>,
 			<&gpi_dma1 1 4 3 64 0>;
 		dma-names = "tx", "rx";
+/* #ifdef VENDOR_EDIT */
+/* Huiqun.Han@PSW.MM.AudioDriver.Machine, 2018/06/28, Add for usb type c audio driver*/
+/*
 		pinctrl-names = "default", "sleep";
 		pinctrl-0 = <&qupv3_se12_i2c_active>;
 		pinctrl-1 = <&qupv3_se12_i2c_sleep>;
+*/
+/* #endif VENDOR_EDIT */
 		qcom,wrapper-core = <&qupv3_1>;
 		status = "disabled";
 	};
@@ -646,9 +700,14 @@
 		clocks = <&clock_gcc GCC_QUPV3_WRAP1_S0_CLK>,
 			<&clock_gcc GCC_QUPV3_WRAP_1_M_AHB_CLK>,
 			<&clock_gcc GCC_QUPV3_WRAP_1_S_AHB_CLK>;
+		/* #ifndef VENDOR_EDIT */
+		/* Jianfeng.Qiu@PSW.MM.AudioDriver.Machine, 2018/04/18, Delete for audio */
+		/*
 		pinctrl-names = "default", "sleep";
 		pinctrl-0 = <&qupv3_se8_spi_active>;
 		pinctrl-1 = <&qupv3_se8_spi_sleep>;
+		*/
+		/* #endif VENDOR_EDIT */
 		interrupts = <GIC_SPI 353 0>;
 		spi-max-frequency = <50000000>;
 		qcom,wrapper-core = <&qupv3_1>;
@@ -668,9 +727,14 @@
 		clocks = <&clock_gcc GCC_QUPV3_WRAP1_S1_CLK>,
 			<&clock_gcc GCC_QUPV3_WRAP_1_M_AHB_CLK>,
 			<&clock_gcc GCC_QUPV3_WRAP_1_S_AHB_CLK>;
+/* #ifdef VENDOR_EDIT */
+/* Huiqun.Han@PSW.MM.AudioDriver.Machine, 2018/06/28, Add for smart mic driver, gpio 5*/
+/*
 		pinctrl-names = "default", "sleep";
 		pinctrl-0 = <&qupv3_se9_spi_active>;
 		pinctrl-1 = <&qupv3_se9_spi_sleep>;
+*/
+/* #endif VENDOR_EDIT */
 		interrupts = <GIC_SPI 354 0>;
 		spi-max-frequency = <50000000>;
 		qcom,wrapper-core = <&qupv3_1>;
@@ -734,9 +798,14 @@
 		clocks = <&clock_gcc GCC_QUPV3_WRAP1_S4_CLK>,
 			<&clock_gcc GCC_QUPV3_WRAP_1_M_AHB_CLK>,
 			<&clock_gcc GCC_QUPV3_WRAP_1_S_AHB_CLK>;
+/* #ifdef VENDOR_EDIT */
+/* Huiqun.Han@PSW.MM.AudioDriver.Machine, 2018/06/28, Add for usb type c audio driver*/
+/*
 		pinctrl-names = "default", "sleep";
 		pinctrl-0 = <&qupv3_se12_spi_active>;
 		pinctrl-1 = <&qupv3_se12_spi_sleep>;
+*/
+/* #endif VENDOR_EDIT */
 		interrupts = <GIC_SPI 357 0>;
 		spi-max-frequency = <50000000>;
 		qcom,wrapper-core = <&qupv3_1>;

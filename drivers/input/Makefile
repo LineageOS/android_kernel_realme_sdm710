@@ -36,3 +36,6 @@ obj-$(CONFIG_INPUT_KEYCOMBO)	+= keycombo.o
 
 # Oppo secure common
 obj-y += misc/oppo_seccommon_drivers/
+
+# Oppo FPC drivers
+obj-$(CONFIG_OPPO_FINGERPRINT)  += oppo_fp_drivers/

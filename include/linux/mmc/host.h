@@ -571,6 +571,11 @@ struct mmc_host {
 	bool			sdio_irq_pending;
 	atomic_t		sdio_irq_thread_abort;
 
+#ifdef VENDOR_EDIT
+//yh@bsp, 2015-10-21 Add for special card compatible
+        bool                    card_stuck_in_programing_status;
+#endif /* VENDOR_EDIT */
+
 	mmc_pm_flag_t		pm_flags;	/* requested pm features */
 
 	struct led_trigger	*led;		/* activity led */

@@ -40,7 +40,17 @@ static irqreturn_t mmc_gpio_cd_irqt(int irq, void *dev_id)
 	pr_debug("%s: cd gpio irq, gpio state %d (CARD_%s)\n",
 		mmc_hostname(host), present, present?"INSERT":"REMOVAL");
 
+#ifdef VENDOR_EDIT
+	//tangshaoqing@RM.BSP.Kernel.Driver 2018/11/23 add for sdcard detect debug
+	printk(KERN_ERR "%s: cd gpio irq, gpio state %d (CARD_%s)\n",
+                mmc_hostname(host), present, present?"INSERT":"REMOVAL");
+#endif
+
 	host->trigger_card_event = true;
+#ifdef VENDOR_EDIT
+//yh@bsp, 2015-10-21 Add for special card compatible
+        host->card_stuck_in_programing_status = false;
+#endif /* VENDOR_EDIT */
 	mmc_detect_change(host, msecs_to_jiffies(200));
 
 	return IRQ_HANDLED;

@@ -237,7 +237,10 @@
 
 #define QPNP_WLED_AVDD_MV_TO_REG(val) \
 		((val - QPNP_WLED_AVDD_MIN_MV) / QPNP_WLED_AVDD_STEP_MV)
-
+#ifdef VENDOR_EDIT
+//caiwutang@MM.Display.LCD.Feature, 2019-01-24, Add for 2string bl
+extern char *saved_command_line;
+#endif /* VENDOR_EDIT */
 /* output feedback mode */
 enum qpnp_wled_fdbk_op {
 	QPNP_WLED_FDBK_AUTO,
@@ -2651,6 +2654,13 @@ static int qpnp_wled_parse_dt(struct qpnp_wled *wled)
 			wled->strings[i] = i;
 	} else {
 		wled->num_strings = temp_val;
+                #ifdef VENDOR_EDIT
+                //caiwutang@MM.Display.LCD.Feature, 2019-01-24, Add for 2string bl
+                if (strstr(saved_command_line,"2str")){
+                        pr_info("bl is 2str");
+                        wled->num_strings = 2;
+                }
+                #endif /* VENDOR_EDIT */
 		strings = prop->value;
 		for (i = 0; i < wled->num_strings; ++i)
 			wled->strings[i] = strings[i];

@@ -5343,18 +5343,3 @@ void clear_view_touchdown_flag(void)
         g_tp->view_area_touched = 0;
     }
 }
-
-static oem_verified_boot_state oem_verifiedbootstate = OEM_VERIFIED_BOOT_STATE_LOCKED;
-bool is_oem_unlocked(void)
-{
-    return (oem_verifiedbootstate == OEM_VERIFIED_BOOT_STATE_UNLOCKED);
-}
-int __init get_oem_verified_boot_state(void)
-{
-    if (strstr(boot_command_line, "androidboot.verifiedbootstate=orange")) {
-        oem_verifiedbootstate = OEM_VERIFIED_BOOT_STATE_UNLOCKED;
-    } else {
-        oem_verifiedbootstate = OEM_VERIFIED_BOOT_STATE_LOCKED;
-    }
-    return 0;
-}

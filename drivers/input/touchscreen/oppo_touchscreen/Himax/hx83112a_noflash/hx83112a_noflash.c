@@ -1686,18 +1686,7 @@ void himax_mcu_0f_operation(struct work_struct *work)
     //int err = NO_ERR;
     //const struct firmware *fw_entry = NULL;
 
-
     TPD_INFO("%s, Entering \n", __func__);
-
-    if (private_ts->boot_mode != MSM_BOOT_MODE__RECOVERY)
-    {
-    if (0 == is_oem_unlocked())
-       {
-			TPD_INFO("file name = %s\n", private_ts->panel_data.fw_name);
-	   }
-    } else {
-        TPD_INFO("TP firmware has been requested.\n");
-    }
 
     if(g_f_0f_updat == 1) {
         TPD_INFO("%s:[Warning]Other thread is updating now!\n", __func__);
@@ -6509,10 +6498,7 @@ static int hx83112b_tp_probe(struct spi_device *spi)
     } else {
         //disable_irq_nosync(chip_info->hx_irq);
     }
-	//if (is_oem_unlocked()) {
-      //  TPD_INFO("Replace system image for cts, download fw by headfile\n");
         queue_delayed_work(chip_info->himax_0f_update_wq, &chip_info->work_0f_update, msecs_to_jiffies(500));
-    //}
 
     return 0;
 err_spi_setup:
@@ -6625,7 +6611,6 @@ static int __init tp_driver_init(void)
     }
 
     get_lcd_vendor();
-	get_oem_verified_boot_state();
 
     status = spi_register_driver(&himax_common_driver);
     if (status < 0) {

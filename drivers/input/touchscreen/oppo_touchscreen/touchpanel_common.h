@@ -205,11 +205,6 @@ typedef enum lcd_power {
     LCD_POWER_ON,
 }lcd_power_status;
 
-typedef enum {
-    OEM_VERIFIED_BOOT_STATE_UNLOCKED,
-    OEM_VERIFIED_BOOT_STATE_LOCKED,
-}oem_verified_boot_state;
-
 struct Coordinate {
     int x;
     int y;
@@ -659,8 +654,6 @@ extern int tp_util_get_vendor(struct hw_resource *hw_res, struct panel_info *pan
 extern bool tp_judge_ic_match(char * tp_ic_name);
 __attribute__((weak)) int request_firmware_select(const struct firmware **firmware_p, const char *name, struct device *device) {return 1;}
 __attribute__((weak)) int opticalfp_irq_handler(struct fp_underscreen_info *fp_tpinfo) {return 0;}
-bool is_oem_unlocked(void);
-int __init get_oem_verified_boot_state(void);
 
 #endif
 

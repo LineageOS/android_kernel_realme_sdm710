@@ -110,13 +110,6 @@ static int hub_port_disable(struct usb_hub *hub, int port1, int set_state);
 static bool hub_port_warm_reset_required(struct usb_hub *hub, int port1,
 		u16 portstatus);
 
-#ifdef VENDOR_EDIT
-/* Jianchao.Shi@PSW.BSP.CHG.Basic, 2018/05/25, sjc Add for handle xiaomi typec headset dsp crash issue(1+) */
-unsigned int connected_usb_idVendor = 0;
-unsigned int connected_usb_idProduct = 0;
-unsigned int connected_usb_devnum = 0xff;
-#endif
-
 static inline char *portspeed(struct usb_hub *hub, int portstatus)
 {
 	if (hub_is_superspeedplus(hub->hdev))
@@ -2144,15 +2137,6 @@ void usb_disconnect(struct usb_device **pdev)
 	usb_set_device_state(udev, USB_STATE_NOTATTACHED);
 	dev_info(&udev->dev, "USB disconnect, device number %d\n",
 			udev->devnum);
-#ifdef VENDOR_EDIT
-/* Jianchao.Shi@PSW.BSP.CHG.Basic, 2018/05/25, sjc Add for handle xiaomi typec headset dsp crash issue(1+) */
-	if (connected_usb_devnum == udev->devnum) {
-		dev_info(&udev->dev, "xiaomi headset removed, devnum %d\n",udev->devnum);
-		connected_usb_idVendor = 0;
-		connected_usb_idProduct = 0;
-		connected_usb_devnum = 0xff;
-	}
-#endif
 
 	/*
 	 * Ensure that the pm runtime code knows that the USB device
@@ -2480,15 +2464,6 @@ int usb_new_device(struct usb_device *udev)
 	/* export the usbdev device-node for libusb */
 	udev->dev.devt = MKDEV(USB_DEVICE_MAJOR,
 			(((udev->bus->busnum-1) * 128) + (udev->devnum-1)));
-#ifdef VENDOR_EDIT
-/* Jianchao.Shi@PSW.BSP.CHG.Basic, 2018/05/25, sjc Add for handle xiaomi typec headset dsp crash issue(1+) */
-	if ((0x2717 == le16_to_cpu(udev->descriptor.idVendor)) && (0x3801 == le16_to_cpu(udev->descriptor.idProduct))) {
-		connected_usb_idVendor = le16_to_cpu(udev->descriptor.idVendor);
-		connected_usb_idProduct = le16_to_cpu(udev->descriptor.idProduct);
-		connected_usb_devnum = udev->devnum;
-		dev_info(&udev->dev, "xiaomi headset identified, devnum %d\n",udev->devnum);
-	}
-#endif
 
 	/* Tell the world! */
 	announce_device(udev);

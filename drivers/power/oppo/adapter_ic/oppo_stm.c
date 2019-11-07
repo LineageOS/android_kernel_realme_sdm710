@@ -13,18 +13,10 @@
 * Revision 1.0     2015-06-22        Fuchun.Liao@BSP.CHG.Basic         Created for new architecture from R9
 ************************************************************************************************************/
 
-#ifdef CONFIG_OPPO_CHARGER_MTK
-#include <linux/slab.h>
-#include <linux/delay.h>
-#include <linux/xlog.h>
-#include <linux/gpio.h>
-#include <linux/module.h>
-#else
 #include <linux/gpio.h>
 #include <linux/delay.h>
 #include <linux/module.h>
 #include <linux/slab.h>
-#endif
 
 #include "oppo_stm.h"
 #include "../oppo_charger.h"
@@ -486,7 +478,6 @@ update_err:
         return false;
 }
 
-#ifndef CONFIG_OPPO_CHARGER_MTK
 bool oppo_vooc_adapter_update_is_tx_gpio(unsigned long gpio_num)
 {
         if (!the_chip) {
@@ -510,14 +501,13 @@ bool oppo_vooc_adapter_update_is_rx_gpio(unsigned long gpio_num)
                 return false;
         }
 }
-#endif
 
 static void register_adapter_devinfo(void)
 {
 	int ret = 0;
 	char *version;
 	char *manufacture;
-	
+
 	version = "adapter";
 	manufacture = "stm8s";
 

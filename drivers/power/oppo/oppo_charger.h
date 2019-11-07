@@ -32,12 +32,6 @@
 #endif
 #endif
 
-#ifdef CONFIG_OPPO_CHARGER_MTK
-#include <linux/i2c.h>
-//#include <mt-plat/battery_meter.h>
-#include <mt-plat/mtk_boot.h>
-
-#else /* CONFIG_OPPO_CHARGER_MTK */
 #include <linux/regulator/driver.h>
 #include <linux/regulator/of_regulator.h>
 #include <linux/regulator/machine.h>
@@ -47,9 +41,6 @@
 #include "../../../drivers/power/supply/qcom/smb-lib.h"
 
 #endif /* CONFIG_OPPO_SDM670_CHARGER */
-
-#endif /* CONFIG_OPPO_CHARGER_MTK */
-
 
 #define CHG_LOG_CRTI 1
 #define CHG_LOG_FULL 2
@@ -313,17 +304,11 @@ struct oppo_chg_chip {
     	struct power_supply_desc 	usb_psd;
 		struct power_supply_config 	usb_cfg;
     	struct power_supply_desc 	battery_psd;
-        
 
-		struct power_supply			*usb_psy;
 
-#ifndef CONFIG_OPPO_CHARGER_MTK
+	struct power_supply			*usb_psy;
+
         struct qcom_pmic			pmic_spmi;
-#endif
-#ifdef CONFIG_OPPO_CHARGER_MTK_CHGIC
-        struct mtk_pmic				chgic_mtk;
-#endif
-
         struct power_supply        *batt_psy;
 /*        struct battery_data battery_main        */
         struct delayed_work        update_work;
@@ -380,23 +365,16 @@ struct oppo_chg_chip {
         int                 stop_voter;
         int                 notify_code;
         int                 notify_flag;
-		
-		bool                led_on;
+	bool                led_on;
         bool                led_on_change;
-	
-		
         bool                camera_on;
         bool                calling_on;
-
         bool                ac_online;
-#ifdef         CONFIG_OPPO_CHARGER_MTK
-        bool                usb_online;
-#endif
         bool                otg_online;
         bool                otg_switch;
         int                 mmi_chg;
         int                 unwakelock_chg;
-		int					stop_chg;
+	int                 stop_chg;
         int                 mmi_fastchg;
         int                 boot_reason;
         int                 boot_mode;
@@ -407,7 +385,7 @@ struct oppo_chg_chip {
         bool                chg_ctrl_by_lcd;
         bool                chg_ctrl_by_lcd_default;
         bool                chg_ctrl_by_camera;
-		bool				bq25890h_flag;
+	bool		    bq25890h_flag;
         bool                chg_ctrl_by_calling;
         bool                fg_bcl_poll;
 #ifdef CONFIG_FB
@@ -426,22 +404,6 @@ struct oppo_chg_chip {
         struct task_struct *tbatt_pwroff_task;
 };
 
-
-#ifdef CONFIG_OPPO_CHARGER_MTK6771
-struct smb_irq_info {
-	const char		*name;
-	int (*smb_irq)(struct oppo_chg_chip *chip, u8 rt_stat);
-	int			high;
-	int			low;
-};
-
-struct irq_handler_info {
-		u8			stat_reg;
-		u8			val;
-		u8			prev_val;
-		struct smb_irq_info	irq_info[4];
-};
-#endif
 struct oppo_chg_operations {
         void (*dump_registers)(void);
         int (*kick_wdt)(void);
@@ -478,7 +440,6 @@ struct oppo_chg_operations {
         void (*set_power_off)(void);
         void (*usb_connect)(void);
         void (*usb_disconnect)(void);
-#ifndef CONFIG_OPPO_CHARGER_MTK
         int (*get_aicl_ma)(void);
         void(*rerun_aicl)(void);
         int (*tlim_en)(bool);
@@ -486,7 +447,6 @@ struct oppo_chg_operations {
         int(*otg_pulse_skip_disable)(enum skip_reason, bool);
         int(*set_dp_dm)(int);
         int(*calc_flash_current)(void);
-#endif
         int (*get_chg_current_step)(void);
         bool (*need_to_check_ibatt)(void);
 #ifdef CONFIG_OPPO_RTC_DET_SUPPORT
@@ -561,11 +521,6 @@ int oppo_chg_show_vooc_logo_ornot(void);
 
 bool get_otg_switch(void);
 
-#ifdef CONFIG_OPPO_CHARGER_MTK
-bool oppo_chg_get_otg_online(void);
-void oppo_chg_set_otg_online(bool online);
-#endif
-
 bool oppo_chg_get_batt_full(void);
 bool oppo_chg_get_rechging_status(void);
 
@@ -576,10 +531,8 @@ void oppo_chg_set_chargerid_switch_val(int value);
 void oppo_chg_turn_on_charging(struct oppo_chg_chip *chip);
 
 void oppo_chg_clear_chargerid_info(void);
-#ifndef CONFIG_OPPO_CHARGER_MTK
 void oppo_chg_variables_reset(struct oppo_chg_chip *chip, bool in);
 void oppo_chg_external_power_changed(struct power_supply *psy);
-#endif
 int oppo_is_rf_ftm_mode(void);
 //huangtongfeng@BSP.CHG.Basic, 2017/01/13, add for kpoc charging param.
 int oppo_get_charger_chip_st(void);

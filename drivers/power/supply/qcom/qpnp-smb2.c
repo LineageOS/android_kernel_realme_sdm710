@@ -1891,16 +1891,7 @@ static enum power_supply_property smb2_batt_props[] = {
 /*CTS*/
 	POWER_SUPPLY_PROP_CHARGE_COUNTER,
 	POWER_SUPPLY_PROP_CURRENT_MAX,
-
-#if defined(CONFIG_OPPO_CHARGER_MTK6763) || defined(CONFIG_OPPO_CHARGER_MTK6771)
-	POWER_SUPPLY_PROP_STOP_CHARGING_ENABLE,
-	POWER_SUPPLY_PROP_adjust_power,
-#endif
-#if defined(CONFIG_OPPO_CHARGER_MTK6771)
-	POWER_SUPPLY_PROP_CHARGE_COUNTER,
-	POWER_SUPPLY_PROP_CURRENT_MAX,
-#endif
-    POWER_SUPPLY_PROP_CHARGE_FULL,
+        POWER_SUPPLY_PROP_CHARGE_FULL,
 
 #ifdef CONFIG_OPPO_CHECK_CHARGERID_VOLT
 	POWER_SUPPLY_PROP_CHARGERID_VOLT,
@@ -4543,24 +4534,6 @@ struct oppo_chg_operations  smb2_chg_ops = {
 	.get_chargerid_switch_val = smbchg_get_chargerid_switch_val,
 	.need_to_check_ibatt = smbchg_need_to_check_ibatt,
 	.get_chg_current_step = smbchg_get_chg_current_step,
-#ifdef CONFIG_OPPO_CHARGER_MTK
-	.get_charger_type = mt_power_supply_type_check,
-	.get_charger_volt = battery_meter_get_charger_voltage,
-	.check_chrdet_status = pmic_chrdet_status,
-	.get_instant_vbatt = battery_meter_get_battery_voltage,
-	.get_boot_mode = get_boot_mode,
-	.get_boot_reason = get_boot_reason,
-#ifdef CONFIG_MTK_HAFG_20
-	.get_rtc_soc = get_rtc_spare_oppo_fg_value,
-	.set_rtc_soc = set_rtc_spare_oppo_fg_value,
-#else
-	.get_rtc_soc = get_rtc_spare_fg_value,
-	.set_rtc_soc = set_rtc_spare_fg_value,
-#endif	/* CONFIG_MTK_HAFG_20 */
-	.set_power_off = mt_power_off,
-	.usb_connect = mt_usb_connect,
-	.usb_disconnect = mt_usb_disconnect,
-#else
 	.get_charger_type = opchg_get_charger_type,
 	.get_charger_volt = qpnp_get_prop_charger_voltage_now,
 	.check_chrdet_status = oppo_chg_is_usb_present,
@@ -4576,7 +4549,6 @@ struct oppo_chg_operations  smb2_chg_ops = {
 	.otg_pulse_skip_disable = smbchg_set_prop_flash_active,
 	.set_dp_dm = smbchg_dp_dm,
 	.calc_flash_current = smbchg_calc_max_flash_current,
-#endif	/* CONFIG_OPPO_CHARGER_MTK */
 #ifdef CONFIG_OPPO_RTC_DET_SUPPORT
 	.check_rtc_reset = rtc_reset_check,
 #endif

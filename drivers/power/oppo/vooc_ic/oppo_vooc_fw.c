@@ -16,28 +16,6 @@
 * Revision 2.0    2018-3-31     YIchun.Chen@BSP.CHG                     ADD for log
 ************************************************************************************************************/
 
-#ifdef CONFIG_OPPO_CHARGER_MTK
-#include <linux/interrupt.h>
-#include <linux/i2c.h>
-#include <linux/slab.h>
-#include <linux/irq.h>
-#include <linux/miscdevice.h>
-#include <asm/uaccess.h>
-#include <linux/delay.h>
-#include <linux/input.h>
-#include <linux/workqueue.h>
-#include <linux/kobject.h>
-#include <linux/platform_device.h>
-#include <asm/atomic.h>
-#include <linux/xlog.h>
-//#include <upmu_common.h>
-#include <linux/gpio.h>
-//#include <linux/irqchip/mtk-eic.h>
-#include <linux/of.h>
-#include <linux/of_irq.h>
-#include <linux/of_gpio.h>
-#include <mt-plat/mtk_boot_common.h>
-#else
 #include <linux/i2c.h>
 #include <linux/debugfs.h>
 #include <linux/gpio.h>
@@ -55,7 +33,6 @@
 #include <linux/regulator/of_regulator.h>
 #include <linux/regulator/machine.h>
 #include <soc/oppo/boot_mode.h>
-#endif
 
 #include "../oppo_charger.h"
 #include "../oppo_gauge.h"
@@ -229,21 +206,11 @@ void oppo_vooc_fw_type_dt(struct oppo_vooc_chip *chip)
 
 }
 
-/*This is only for P60 P(17197 P)*/
-#ifdef CONFIG_OPPO_CHARGER_MTK6771
-extern int main_hwid5_val;
-#endif
-
 int oppo_vooc_mcu_hwid_check(struct oppo_vooc_chip *chip)
 {
         int rc;
 		static int mcu_hwid_type = -1;
         struct device_node *node = NULL;
-
-/*This is only for P60 P(17197 P)*/
-#ifdef CONFIG_OPPO_CHARGER_MTK6771
-        return main_hwid5_val;
-#endif
 
 		if(mcu_hwid_type != -1) {
 				chg_debug("mcu_hwid_type[%d]\n", mcu_hwid_type);
@@ -449,11 +416,7 @@ void opchg_set_reset_active(struct oppo_vooc_chip *chip)
 
         mutex_lock(&chip->pinctrl_mutex);
         gpio_direction_output(chip->vooc_gpio.reset_gpio, 0);    /* out 1 */
-#ifdef CONFIG_OPPO_CHARGER_MTK
-        pinctrl_select_state(chip->vooc_gpio.pinctrl, chip->vooc_gpio.gpio_reset_sleep); /* PULL_down */
-#else
         pinctrl_select_state(chip->vooc_gpio.pinctrl, chip->vooc_gpio.gpio_reset_active);        /* PULL_up */
-#endif
         gpio_set_value(chip->vooc_gpio.reset_gpio, 0);
         usleep_range(5000, 5000);
         gpio_set_value(chip->vooc_gpio.reset_gpio, 1);
@@ -471,32 +434,12 @@ int oppo_vooc_get_reset_gpio_val(struct oppo_vooc_chip *chip)
 
 bool oppo_is_power_off_charging(struct oppo_vooc_chip *chip)
 {
-#ifdef CONFIG_OPPO_CHARGER_MTK
-        if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT) {
-                return true;
-        } else {
-                return false;
-        }
-#else
         return qpnp_is_power_off_charging();
-#endif
 }
 
 bool oppo_is_charger_reboot(struct oppo_vooc_chip *chip)
 {
-#ifdef CONFIG_OPPO_CHARGER_MTK
-        int charger_type;
-
-        charger_type = oppo_chg_get_chg_type();
-        if (charger_type == 5) {
-                chg_debug("dont need check fw_update\n");
-                return true;
-        } else {
-                return false;
-        }
-#else
         return qpnp_is_charger_reboot();
-#endif
 }
 
 static void delay_reset_mcu_work_func(struct work_struct *work)
@@ -726,82 +669,21 @@ static irqreturn_t irq_rx_handler(int irq, void *dev_id)
 
 void oppo_vooc_data_irq_init(struct oppo_vooc_chip *chip)
 {
-#ifdef CONFIG_OPPO_CHARGER_MTK
-        struct device_node *node = NULL;
-        struct device_node *node_new = NULL;
-        u32 intr[2] = {0, 0};
-
-        node = of_find_compatible_node(NULL, NULL, "mediatek, VOOC_AP_DATA-eint");
-        node_new = of_find_compatible_node(NULL, NULL, "mediatek, VOOC_EINT_NEW_FUNCTION");
-        if (node) {
-                if (node_new) {
-                        chip->vooc_gpio.data_irq = gpio_to_irq(chip->vooc_gpio.data_gpio);
-                        chg_err("vooc_gpio.data_irq:%d\n", chip->vooc_gpio.data_irq);
-                } else {
-                        of_property_read_u32_array(node , "interrupts", intr, ARRAY_SIZE(intr));
-                        chg_debug(" intr[0]  = %d, intr[1]  = %d\r\n", intr[0], intr[1]);
-                        chip->vooc_gpio.data_irq = irq_of_parse_and_map(node, 0);
-                }
-        } else {
-                chg_err(" node not exist!\r\n");
-                chip->vooc_gpio.data_irq = CUST_EINT_MCU_AP_DATA;
-        }
-#else
         chip->vooc_gpio.data_irq = gpio_to_irq(chip->vooc_gpio.data_gpio);
-#endif
 }
 
 void oppo_vooc_eint_register(struct oppo_vooc_chip *chip)
 {
-#ifdef CONFIG_OPPO_CHARGER_MTK
-        static int register_status = 0;
-        int ret = 0;
-        struct device_node *node = NULL;
-        node = of_find_compatible_node(NULL, NULL, "mediatek, VOOC_EINT_NEW_FUNCTION");
-        if (node) {
-                opchg_set_data_active(chip);
-                ret = request_irq(chip->vooc_gpio.data_irq, (irq_handler_t)irq_rx_handler,
-                                IRQF_TRIGGER_RISING, "VOOC_AP_DATA-eint", chip);
-                if (ret < 0) {
-                        chg_err("ret = %d, oppo_vooc_eint_register failed to request_irq \n", ret);
-                }
-        } else {
-                if (!register_status) {
-                        opchg_set_data_active(chip);
-                        ret = request_irq(chip->vooc_gpio.data_irq, (irq_handler_t)irq_rx_handler,
-                                        IRQF_TRIGGER_RISING, "VOOC_AP_DATA-eint",  NULL);
-                        if (ret) {
-                                chg_err("ret = %d, oppo_vooc_eint_register failed to request_irq \n", ret);
-                        }
-                        register_status = 1;
-                } else {
-                        chg_debug("enable_irq!\r\n");
-                        enable_irq(chip->vooc_gpio.data_irq);
-                }
-        }
-#else
         int retval = 0;
         opchg_set_data_active(chip);
         retval = request_irq(chip->vooc_gpio.data_irq, irq_rx_handler, IRQF_TRIGGER_RISING, "mcu_data", chip);
         if (retval < 0) {
                 chg_err("request ap rx irq failed.\n");
         }
-#endif
 }
 
 void oppo_vooc_eint_unregister(struct oppo_vooc_chip *chip)
 {
-#ifdef CONFIG_OPPO_CHARGER_MTK
-        struct device_node *node = NULL;
-        node = of_find_compatible_node(NULL, NULL, "mediatek, VOOC_EINT_NEW_FUNCTION");
-        chg_debug("disable_irq_mtk!\r\n");
-        if (node) {
-                free_irq(chip->vooc_gpio.data_irq, chip);
-        } else {
-                disable_irq(chip->vooc_gpio.data_irq);
-        }
-#else
         free_irq(chip->vooc_gpio.data_irq, chip);
-#endif
 }
 

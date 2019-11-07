@@ -20,31 +20,6 @@
 
 #include <asm/uaccess.h>
 #include <linux/proc_fs.h>
-#ifdef CONFIG_OPPO_CHARGER_MTK
-#include <linux/interrupt.h>
-#include <linux/i2c.h>
-#include <linux/slab.h>
-#include <linux/irq.h>
-#include <linux/miscdevice.h>
-#include <asm/uaccess.h>
-#include <linux/delay.h>
-#include <linux/input.h>
-#include <linux/workqueue.h>
-#include <linux/kobject.h>
-#include <linux/platform_device.h>
-#include <asm/atomic.h>
-
-#include <linux/xlog.h>
-
-//#include <upmu_common.h>
-//#include <mt-plat/mtk_gpio.h>
-#include <linux/dma-mapping.h>
-
-//#include <mt-plat/battery_meter.h>
-#include <linux/module.h>
-#include <soc/oppo/device_info.h>
-
-#else
 #include <linux/i2c.h>
 #include <linux/debugfs.h>
 #include <linux/gpio.h>
@@ -64,7 +39,6 @@
 #include <soc/oppo/device_info.h>
 #include "../gauge_ic/oppo_bq27541.h"
 #include <soc/oppo/device_info.h>
-#endif
 #include "oppo_vooc_fw.h"
 #ifdef VENDOR_EDIT
 //OuYangBaiLi@BSP.CHG.Basic 2018/12/21 modify for vooc charge and normal charge compatibility
@@ -72,11 +46,6 @@
 extern int bq27541_i2c_check(void);
 #endif /* VENDOR_EDIT */
 
-#if defined(CONFIG_OPPO_CHARGER_MTK6763) || defined(CONFIG_OPPO_CHARGER_MTK6771)
-#define I2C_MASK_FLAG	(0x00ff)
-#define I2C_ENEXT_FLAG (0x0200)
-#define I2C_DMA_FLAG	(0xdead2000)
-#endif
 #define ERASE_COUNT                   192        /*0x8800-0x9FFF*/
 #define READ_COUNT                    191
 
@@ -86,130 +55,14 @@ extern int bq27541_i2c_check(void);
 #define FW_CHECK_SUCCESS                             1
 static struct oppo_vooc_chip *the_chip = NULL;
 
-#ifdef CONFIG_OPPO_CHARGER_MTK
-
-#define GTP_SUPPORT_I2C_DMA   			0
-
-#define I2C_MASTER_CLOCK                              300
-#define GTP_DMA_MAX_TRANSACTION_LENGTH  255           /* for DMA mode */
-
-DEFINE_MUTEX(dma_wr_access_stm);
-
-#if GTP_SUPPORT_I2C_DMA
-static int i2c_dma_write(struct i2c_client *client, u8 addr, s32 len, u8 const *txbuf);
-static int i2c_dma_read(struct i2c_client *client, u8 addr, s32 len, u8 *txbuf);
-static u8 *gpDMABuf_va = NULL;
-static dma_addr_t gpDMABuf_pa = 0;
-#endif
-
-#if GTP_SUPPORT_I2C_DMA
-static int i2c_dma_read(struct i2c_client *client, u8 addr, s32 len, u8 *rxbuf)
-{
-        int ret;
-        s32 retry = 0;
-        u8 buffer[1];
-
-        struct i2c_msg msg[2] =
-        {
-                {
-                        .addr = (client->addr & I2C_MASK_FLAG),
-                        .flags = 0,
-                        .buf = buffer,
-                        .len = 1,
-                        .timing = I2C_MASTER_CLOCK
-                },
-                {
-                        .addr = (client->addr & I2C_MASK_FLAG),
-                        .ext_flag = (client->ext_flag | I2C_ENEXT_FLAG | I2C_DMA_FLAG),
-                        .flags = I2C_M_RD,
-                        .buf = (__u8 *)gpDMABuf_pa,   /*modified by PengNan*/
-                        .len = len,
-                        .timing = I2C_MASTER_CLOCK
-                },
-        };
-        mutex_lock(&dma_wr_access_stm);
-        /*buffer[0] = (addr >> 8) & 0xFF;*/
-        buffer[0] = addr & 0xFF;
-        if (rxbuf == NULL) {
-                mutex_unlock(&dma_wr_access_stm);
-                return -1;
-        }
-        /*chg_err("vooc dma i2c read: 0x%x, %d bytes(s)\n", addr, len);*/
-        for (retry = 0; retry < 5; ++retry) {
-                ret = i2c_transfer(client->adapter, &msg[0], 2);
-                if (ret < 0) {
-                        continue;
-                }
-                memcpy(rxbuf, gpDMABuf_va, len);
-                mutex_unlock(&dma_wr_access_stm);
-                return 0;
-        }
-        /*chg_err(" Error: 0x%04X, %d byte(s), err-code: %d\n", addr, len, ret);*/
-        mutex_unlock(&dma_wr_access_stm);
-        return ret;
-}
-
-static int i2c_dma_write(struct i2c_client *client, u8 addr, s32 len, u8 const *txbuf)
-{
-    int ret = 0;
-        s32 retry = 0;
-        u8 *wr_buf = gpDMABuf_va;
-        struct i2c_msg msg =
-        {
-                .addr = (client->addr & I2C_MASK_FLAG),
-                .ext_flag = (client->ext_flag | I2C_ENEXT_FLAG | I2C_DMA_FLAG),
-                .flags = 0,
-                .buf = (__u8 *)gpDMABuf_pa,        /*modified by PengNan*/
-                .len = 1 + len,
-                .timing = I2C_MASTER_CLOCK
-        };
-        mutex_lock(&dma_wr_access_stm);
-        wr_buf[0] = (u8)(addr & 0xFF);
-        if (txbuf == NULL) {
-                mutex_unlock(&dma_wr_access_stm);
-                return -1;
-        }
-        memcpy(wr_buf+1, txbuf, len);
-        for (retry = 0; retry < 5; ++retry) {
-                ret = i2c_transfer(client->adapter, &msg, 1);
-                if (ret < 0) {
-                        continue;
-                }
-                mutex_unlock(&dma_wr_access_stm);
-                return 0;
-        }
-        /*chg_err(" Error: 0x%04X, %d byte(s), err-code: %d\n", addr, len, ret);*/
-        mutex_unlock(&dma_wr_access_stm);
-        return ret;
-}
-#endif /*GTP_SUPPORT_I2C_DMA*/
-#endif
-
 static int oppo_vooc_i2c_read(struct i2c_client *client, u8 addr, s32 len, u8 *rxbuf)
 {
-#ifdef CONFIG_OPPO_CHARGER_MTK
-#if GTP_SUPPORT_I2C_DMA
-        return i2c_dma_read(client, addr, len, rxbuf);
-#else
-        return i2c_smbus_read_i2c_block_data(client, addr, len, rxbuf);
-#endif
-#else
 	return i2c_smbus_read_i2c_block_data(client, addr, len, rxbuf);
-#endif
 }
 
 static int oppo_vooc_i2c_write(struct i2c_client *client, u8 addr, s32 len, u8 const *txbuf)
 {
-#ifdef CONFIG_OPPO_CHARGER_MTK
-#if GTP_SUPPORT_I2C_DMA
-        return i2c_dma_write(client, addr, len, txbuf);
-#else
-        return i2c_smbus_write_i2c_block_data(client, addr, len, txbuf);
-#endif
-#else
 	return i2c_smbus_write_i2c_block_data(client, addr, len, txbuf);
-#endif
-
 }
 
 static bool stm8s_fw_check_frontline(struct oppo_vooc_chip *chip)
@@ -700,18 +553,6 @@ static int stm8s_driver_probe(struct i2c_client *client, const struct i2c_device
         chip->dev = &client->dev;
         i2c_set_clientdata(client, chip);
 
-#ifdef CONFIG_OPPO_CHARGER_MTK
-#if GTP_SUPPORT_I2C_DMA
-        client->dev.coherent_dma_mask = DMA_BIT_MASK(32);
-        gpDMABuf_va = (u8 *)dma_alloc_coherent(&client->dev, GTP_DMA_MAX_TRANSACTION_LENGTH, &gpDMABuf_pa, GFP_KERNEL);
-        if (!gpDMABuf_va) {
-                chg_err("[Error] Allocate DMA I2C Buffer failed!\n");
-        } else {
-                chg_debug(" ppp dma_alloc_coherent success\n");
-        }
-        memset(gpDMABuf_va, 0, GTP_DMA_MAX_TRANSACTION_LENGTH);
-#endif
-#endif
        if(get_vooc_mcu_type(chip) != OPPO_VOOC_MCU_HWID_STM8S){
                chg_err("It is not stm8s\n");
                return -ENOMEM;
@@ -721,7 +562,7 @@ static int stm8s_driver_probe(struct i2c_client *client, const struct i2c_device
         chip->vooc_fw_check = false;
 		mutex_init(&chip->pinctrl_mutex);
 
-/* wenbin.liu@BSP.CHG.Vooc, 2016/10/20 
+/* wenbin.liu@BSP.CHG.Vooc, 2016/10/20
 **    Modify for vooc batt 4.40   */
         oppo_vooc_fw_type_dt(chip);
         if (chip->batt_type_4400mv) {

@@ -20,25 +20,6 @@
 
 #define __OPPO_VOOC_FW_H__
 
-#ifdef CONFIG_OPPO_CHARGER_MTK
-#include <linux/interrupt.h>
-#include <linux/i2c.h>
-#include <linux/slab.h>
-#include <linux/irq.h>
-#include <linux/miscdevice.h>
-#include <asm/uaccess.h>
-#include <linux/delay.h>
-#include <linux/input.h>
-#include <linux/workqueue.h>
-#include <linux/kobject.h>
-#include <linux/platform_device.h>
-#include <asm/atomic.h>
-
-#include <linux/xlog.h>
-//#include <upmu_common.h>
-//#include <mt-plat/mtk_gpio.h>
-//#include <linux/irqchip/mtk-eic.h>
-#else
 #include <linux/i2c.h>
 #include <linux/debugfs.h>
 #include <linux/gpio.h>
@@ -55,8 +36,6 @@
 #include <linux/regulator/driver.h>
 #include <linux/regulator/of_regulator.h>
 #include <linux/regulator/machine.h>
-
-#endif
 
 #include "../oppo_charger.h"
 #include "../oppo_gauge.h"
@@ -77,15 +56,14 @@ enum {
 #define OPPO_VOOC_SW_CTRL_DVT			42
 #define CUST_EINT_MCU_AP_DATA 			14
 
-#ifndef CONFIG_OPPO_CHARGER_MTK
 enum{
 	HW_VERSION_UNKNOWN,
-	HW_VERSION__EVT, 	
-	HW_VERSION__DVT, 	
-	HW_VERSION__MCU, 	
-	HW_VERSION__15041, 	
+	HW_VERSION__EVT,
+	HW_VERSION__DVT,
+	HW_VERSION__MCU,
+	HW_VERSION__15041,
 };
-#endif
+
 enum {
 	VOOC_FW_TYPE_INVALID,
 	VOOC_FW_TYPE_STM8S_4350,

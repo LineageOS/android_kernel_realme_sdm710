@@ -22,12 +22,6 @@
 #include <linux/kthread.h>
 #include <linux/version.h>
 #include <linux/reboot.h>
-#ifdef CONFIG_OPPO_CHARGER_MTK
-
-//#include <mtk_boot_common.h>
-#include <mt-plat/mtk_boot.h>
-#include <linux/gpio.h>
-#else /* CONFIG_OPPO_CHARGER_MTK */
 #include <linux/spinlock.h>
 #include <linux/gpio.h>
 #include <linux/errno.h>
@@ -59,7 +53,6 @@
 #endif
 #include <linux/ktime.h>
 #include <linux/kernel.h>
-#endif
 
 #include "oppo_charger.h"
 #include "oppo_gauge.h"
@@ -141,11 +134,6 @@ enum power_supply_property oppo_batt_props[] = {
         POWER_SUPPLY_PROP_CHARGE_TECHNOLOGY,
         POWER_SUPPLY_PROP_FAST_CHARGE,
         POWER_SUPPLY_PROP_MMI_CHARGING_ENABLE,        /*add for MMI_CHG_TEST*/
-#ifdef CONFIG_OPPO_CHARGER_MTK
-        POWER_SUPPLY_PROP_STOP_CHARGING_ENABLE,
-        POWER_SUPPLY_PROP_CHARGE_COUNTER,
-        POWER_SUPPLY_PROP_CURRENT_MAX,
-#endif
         POWER_SUPPLY_PROP_CHARGE_FULL,
         POWER_SUPPLY_PROP_BATTERY_FCC,
         POWER_SUPPLY_PROP_BATTERY_SOH,
@@ -167,114 +155,6 @@ enum power_supply_property oppo_batt_props[] = {
         POWER_SUPPLY_PROP_CHARGE_TERM_CURRENT,
         POWER_SUPPLY_PROP_INPUT_CURRENT_SETTLED,
 };
-
-#ifdef CONFIG_OPPO_CHARGER_MTK
-int oppo_usb_get_property(struct power_supply *psy,
-        enum power_supply_property psp,
-        union power_supply_propval *val)
-{
-        int ret = 0;
-    
-        //struct oppo_chg_chip *chip = container_of(psy->desc, struct oppo_chg_chip, usb_psd);
-		struct oppo_chg_chip *chip = g_charger_chip;
-
-        if (chip->charger_exist) {
-            if (chip->charger_type == POWER_SUPPLY_TYPE_USB && chip->stop_chg ==1) {
-                chip->usb_online = true;
-                chip->usb_psd.type = POWER_SUPPLY_TYPE_USB;
-                }
-        } else {
-                chip->usb_online = false;
-        }
-
-        switch (psp) {
-        case POWER_SUPPLY_PROP_CURRENT_MAX:
-		        val->intval = 500000;
-		        break;
-	    case POWER_SUPPLY_PROP_VOLTAGE_MAX:
-		        val->intval = 5000000;
-		        break;
-        case POWER_SUPPLY_PROP_ONLINE:
-                val->intval = chip->usb_online;
-                break;                                           
-        case POWER_SUPPLY_PROP_OTG_SWITCH:
-                val->intval = chip->otg_switch;
-                break;
-        case POWER_SUPPLY_PROP_OTG_ONLINE:
-                val->intval = chip->otg_online;
-                break;
-        default:
-                pr_err("get prop %d is not supported in usb\n", psp);
-                ret = -EINVAL;
-                break;
-        }
-        return ret;
-}
-
-int oppo_usb_property_is_writeable(struct power_supply *psy,
-        enum power_supply_property psp)
-{
-        int ret = 0;
-        switch (psp) {
-        case POWER_SUPPLY_PROP_OTG_SWITCH:
-                return 1;
-        default:
-                pr_err("writeable prop %d is not supported in usb\n", psp);
-                ret = -EINVAL;
-                break;
-        }
-
-        return 0;
-}
-
-void __attribute__((weak)) oppo_set_otg_switch_status(bool value)
-{
-	return;
-}
-
-int oppo_usb_set_property(struct power_supply *psy,
-        enum power_supply_property psp,
-        const union power_supply_propval *val)
-{
-        int ret = 0;
-        //struct oppo_chg_chip *chip = container_of(psy->desc, struct oppo_chg_chip, usb_psd);
-		struct oppo_chg_chip *chip = g_charger_chip;
-
-        switch (psp) {
-        case POWER_SUPPLY_PROP_OTG_SWITCH:
-                if (val->intval == 1) {
-                        chip->otg_switch = true;
-                        oppo_set_otg_switch_status(true);
-                } else {
-                        chip->otg_switch = false;
-                        chip->otg_online = false;
-                        oppo_set_otg_switch_status(false);
-                }
-                charger_xlog_printk(CHG_LOG_CRTI, "otg_switch: %d\n", chip->otg_switch);
-                break;
-
-        default:
-                pr_err("set prop %d is not supported in usb\n", psp);
-                ret = -EINVAL;
-                break;
-        }
-        return ret;
-}
-
-static void usb_update(struct oppo_chg_chip *chip)
-{
-        if (chip->charger_exist) {
-                /*if (chip->charger_type==STANDARD_HOST || chip->charger_type==CHARGING_HOST) {*/
-                if (chip->charger_type == POWER_SUPPLY_TYPE_USB) {
-                        chip->usb_online = true;
-            chip->usb_psd.type = POWER_SUPPLY_TYPE_USB;
-                }
-        } else {
-                chip->usb_online = false;
-        }
-        power_supply_changed(chip->usb_psy);
-}
-#endif
 
 int oppo_ac_get_property(struct power_supply *psy,
         enum power_supply_property psp,
@@ -338,11 +218,6 @@ int oppo_battery_property_is_writeable(struct power_supply *psy,
         case POWER_SUPPLY_PROP_MMI_CHARGING_ENABLE:
                 rc = 1;
                 break;
-#ifdef CONFIG_OPPO_CHARGER_MTK
-        case POWER_SUPPLY_PROP_STOP_CHARGING_ENABLE:
-                rc = 1;
-                break;
-#endif
 #ifdef CONFIG_OPPO_SHIP_MODE_SUPPORT
         case POWER_SUPPLY_PROP_SHIP_MODE:
                 rc = 1;
@@ -402,16 +277,6 @@ int oppo_battery_set_property(struct power_supply *psy,
                         }
                 }
                 break;
-#ifdef CONFIG_OPPO_CHARGER_MTK
-		case POWER_SUPPLY_PROP_STOP_CHARGING_ENABLE:
-			charger_xlog_printk(CHG_LOG_CRTI, "set stop_chg = [%d].\n", val->intval);
-			if (val->intval == 0) {
-				chip->stop_chg = 0;
-			} else {
-				chip->stop_chg = 1;
-			}
-                break;
-#endif
 #ifdef CONFIG_OPPO_SHIP_MODE_SUPPORT
         case POWER_SUPPLY_PROP_SHIP_MODE:
                 chip->enable_shipmode = val->intval;
@@ -466,15 +331,11 @@ int oppo_battery_get_property(struct power_supply *psy,
                 val->intval = chip->ui_soc;
                 break;
         case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-#ifdef CONFIG_OPPO_CHARGER_MTK
-                val->intval = chip->batt_volt;
-#else
                 val->intval = chip->batt_volt * 1000;
-#endif
                 break;
 		case POWER_SUPPLY_PROP_VOLTAGE_MIN:
 				val->intval = chip->batt_volt_min * 1000;
-				break; 
+				break;
         case POWER_SUPPLY_PROP_CURRENT_NOW:
                 if (oppo_vooc_get_fastchg_started() == true) {
                     chip->icharging = oppo_gauge_get_prev_batt_current();
@@ -500,26 +361,10 @@ int oppo_battery_get_property(struct power_supply *psy,
                 break;
         case POWER_SUPPLY_PROP_FAST_CHARGE:
                 val->intval = oppo_chg_show_vooc_logo_ornot();
-#ifdef CONFIG_OPPO_CHARGER_MTK
-                if (val->intval) {
-                        charger_xlog_printk(CHG_LOG_CRTI, "vooc_logo:%d\n", val->intval);
-                }
-#endif
                 break;
         case POWER_SUPPLY_PROP_MMI_CHARGING_ENABLE:        /*add for MMI_CHG TEST*/
                 val->intval = chip->mmi_chg;
                 break;
-#ifdef CONFIG_OPPO_CHARGER_MTK
-		case POWER_SUPPLY_PROP_STOP_CHARGING_ENABLE:
-			val->intval = chip->stop_chg;
-			break;
-		case POWER_SUPPLY_PROP_CHARGE_COUNTER:
-			val->intval = chip->ui_soc * chip->batt_capacity_mah * 1000 / 100;
-			break;
-		case POWER_SUPPLY_PROP_CURRENT_MAX:
-			val->intval = 2000;
-			break;
-#endif
 		case POWER_SUPPLY_PROP_CHARGE_FULL:
 			val->intval = chip->batt_capacity_mah * 1000;
 			break;
@@ -743,9 +588,7 @@ int oppo_chg_init(struct oppo_chg_chip *chip)
         chip->batt_psy = batt_psy;
 
 
-#ifndef CONFIG_OPPO_CHARGER_MTK
         chip->pmic_spmi.psy_registered = true;
-#endif
         g_charger_chip = chip;
         oppo_chg_awake_init(chip);
 
@@ -1987,16 +1830,9 @@ void oppo_chg_variables_reset(struct oppo_chg_chip *chip, bool in)
 
 
         reset_mcu_delay = 0;
-#ifndef CONFIG_OPPO_CHARGER_MTK
         chip->pmic_spmi.aicl_suspend = false;
-#endif
 
         oppo_chg_battery_authenticate_check(chip);
-#ifdef CONFIG_OPPO_CHARGER_MTK
-        chip->chargerid_volt = 0;
-        chip->chargerid_volt_got = false;
-#endif
-
 }
 
 static void oppo_chg_variables_init(struct oppo_chg_chip *chip)
@@ -2038,13 +1874,6 @@ static void oppo_chg_variables_init(struct oppo_chg_chip *chip)
         chip->allow_swtich_to_fastchg = 1;
 		chip->stop_chg= 1;
         chip->mmi_fastchg = 1;
-#ifdef CONFIG_OPPO_CHARGER_MTK
-        chip->usb_online = false;
-        chip->otg_online = false;
-#else
-/*        chip->pmic_spmi.usb_online = false;
-           IC have init already   */
-#endif
         if(chip->external_gauge) {
             chg_debug("use oppo_gauge_get_batt_authenticate\n");
             chip->authenticate = oppo_gauge_get_batt_authenticate();
@@ -2148,32 +1977,16 @@ static void oppo_chg_full_action(struct oppo_chg_chip *chip)
 
 void oppo_charger_detect_check(struct oppo_chg_chip *chip)
 {
-		
+
         static bool charger_resumed = true;
-#ifdef CONFIG_OPPO_CHARGER_MTK
-        static int charger_flag = 0;
-#endif
-        if (chip->chg_ops->check_chrdet_status()) 
+        if (chip->chg_ops->check_chrdet_status())
 		{
         	oppo_chg_set_awake(chip, true);
 
-            if (chip->charger_type == POWER_SUPPLY_TYPE_UNKNOWN) 
+            if (chip->charger_type == POWER_SUPPLY_TYPE_UNKNOWN)
 			{
             	oppo_chg_variables_reset(chip, true);
-				#ifdef CONFIG_OPPO_CHARGER_MTK	
-				if(is_meta_mode() == true){
-					chip->charger_type = POWER_SUPPLY_TYPE_USB;
-				} else {
 					chip->charger_type = chip->chg_ops->get_charger_type();
-				}
-				if((chip->chg_ops->usb_connect) && chip->charger_type == POWER_SUPPLY_TYPE_USB) {
-					chip->chg_ops->usb_connect();
-                    charger_flag = 1;
-				} 
-				#else
-					chip->charger_type = chip->chg_ops->get_charger_type();
-				#endif
-		
 				charger_xlog_printk(CHG_LOG_CRTI, "Charger in 1 charger_type=%d\n", chip->charger_type);
                 if (oppo_vooc_get_fastchg_to_normal() == true || oppo_vooc_get_fastchg_to_warm() == true) {
                         charger_xlog_printk(CHG_LOG_CRTI, "fast_to_normal or to_warm 1,don't turn on charge here\n");
@@ -2191,21 +2004,15 @@ void oppo_charger_detect_check(struct oppo_chg_chip *chip)
                 } else if (oppo_vooc_get_fastchg_started() == false && charger_resumed == false) {
                         charger_resumed = chip->chg_ops->check_charger_resume();
                         oppo_chg_turn_on_charging(chip);
-		        }		
+		        }
             }
-        } 
-		else 
+        }
+		else
 		{
             oppo_chg_variables_reset(chip, false);
             if (!chip->mmi_fastchg) {
             }
             oppo_gauge_set_batt_full(false);
-			#ifdef CONFIG_OPPO_CHARGER_MTK
-            if (chip->chg_ops->usb_disconnect && charger_flag == 1) {
-                   chip->chg_ops->usb_disconnect();
-                   charger_flag = 0;
-            }
-			#endif
             if (chip->chg_ops->get_charging_enable() == true) {
                     oppo_chg_turn_off_charging(chip);
             }
@@ -2312,23 +2119,6 @@ static void oppo_chg_set_aicl_point(struct oppo_chg_chip *chip)
 static void oppo_chg_check_aicl_input_limit(struct oppo_chg_chip *chip)
 {
         static int aicl_delay_count = 0;
-#ifdef CONFIG_OPPO_CHARGER_MTK
-        if (chip->charging_state == CHARGING_STATUS_FAIL || chip->batt_full == true
-                || ((chip->tbatt_status != BATTERY_STATUS__NORMAL) && (chip->tbatt_status != BATTERY_STATUS__LITTLE_COOL_TEMP))
-                || chip->ui_soc > 85 || oppo_vooc_get_fastchg_started() == true) {
-                aicl_delay_count = 0;
-                return;
-        }
-
-        if (aicl_delay_count > AICL_DELAY_15MIN) {
-                aicl_delay_count = 0;
-                if (oppo_vooc_get_allow_reading() == true) {
-                        oppo_chg_set_input_current_limit(chip);
-                }
-        } else {
-                aicl_delay_count++;
-        }
-#else
         if (chip->charging_state == CHARGING_STATUS_FAIL || chip->batt_full == true
                 || ((chip->tbatt_status != BATTERY_STATUS__NORMAL) && (chip->tbatt_status != BATTERY_STATUS__LITTLE_COOL_TEMP))
                 || ((chip->ui_soc > 85) && (chip->pmic_spmi.aicl_suspend == false)) || oppo_vooc_get_fastchg_started() == true) {
@@ -2362,7 +2152,6 @@ static void oppo_chg_check_aicl_input_limit(struct oppo_chg_chip *chip)
                 oppo_chg_set_input_current_limit(chip);
                 chip->pmic_spmi.hc_mode_flag = true;
         }
-#endif
 }
 
 static void oppo_chg_aicl_check(struct oppo_chg_chip *chip)
@@ -2789,9 +2578,6 @@ static void battery_update(struct oppo_chg_chip *chip)
 
 static void oppo_chg_battery_update_status(struct oppo_chg_chip *chip)
 {
-#ifdef CONFIG_OPPO_CHARGER_MTK
-        usb_update(chip);
-#endif
         battery_update(chip);
 }
 
@@ -2808,14 +2594,7 @@ static void oppo_chg_get_chargerid_voltage(struct oppo_chg_chip *chip)
         if (oppo_vooc_get_vooc_switch_val() == 1) {
                 if (chip->chargerid_volt_got == false) {
                         chip->chg_ops->set_chargerid_switch_val(1);
-#ifdef CONFIG_OPPO_CHARGER_MTK
-						if (oppo_vooc_get_fastchg_started() == false){
-							oppo_vooc_switch_mode(NORMAL_CHARGER_MODE);
-						}
-						usleep_range(100000, 110000);
-#else	
                         usleep_range(20000, 22000);
-#endif /* CONFIG_OPPO_CHARGER_MTK */
                         chip->chargerid_volt = chip->chg_ops->get_chargerid_volt();
                         chip->chargerid_volt_got = true;
                 } else {
@@ -2828,11 +2607,7 @@ static void oppo_chg_get_chargerid_voltage(struct oppo_chg_chip *chip)
         } else if (oppo_vooc_get_vooc_switch_val() == 0) {
                 if (chip->chargerid_volt_got == false) {
                         chip->chg_ops->set_chargerid_switch_val(1);
-#ifdef CONFIG_OPPO_CHARGER_MTK
-						usleep_range(100000, 110000);
-#else 
                         usleep_range(20000, 22000);
-#endif /* CONFIG_OPPO_CHARGER_MTK */
                         chip->chargerid_volt = chip->chg_ops->get_chargerid_volt();
                         chip->chargerid_volt_got = true;
                         if (chip->vooc_project == false) {
@@ -3096,22 +2871,6 @@ static void oppo_chg_check_status_full(struct oppo_chg_chip *chip)
 
 }
 
-static void oppo_chg_kpoc_power_off_check(struct oppo_chg_chip *chip)
-{
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-        if (chip->boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT || chip->boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {       /*vbus < 2.5V*/
-                if ((chip->chg_ops->check_chrdet_status() == false) && (chip->charger_volt < 2500)) {
-                        if ((oppo_vooc_get_fastchg_to_normal() == false) && (oppo_vooc_get_fastchg_to_warm() == false)
-                                && (oppo_vooc_get_adapter_update_status() != ADAPTER_FW_NEED_UPDATE)
-                                && (oppo_vooc_get_btb_temp_over() == false)) {
-                                charger_xlog_printk(CHG_LOG_CRTI, "[pmic_thread_kthread]Unplug Charger/USB In Kernel Power Off Charging Mode Shutdown OS!\n");
-                                chip->chg_ops->set_power_off();
-                        }
-                }
-        }
-#endif
-}
-
 static void oppo_chg_update_work(struct work_struct *work)
 {
         struct delayed_work *dwork = to_delayed_work(work);
@@ -3144,8 +2903,6 @@ static void oppo_chg_update_work(struct work_struct *work)
         }
 
         oppo_chg_battery_update_status(chip);
-
-        oppo_chg_kpoc_power_off_check(chip);
 
         /* run again after interval */
         schedule_delayed_work(&chip->update_work, OPPO_CHG_UPDATE_INTERVAL);
@@ -3382,16 +3139,6 @@ void oppo_chg_clear_chargerid_info(void)
 int oppo_is_rf_ftm_mode(void)
 {
 	int boot_mode = get_boot_mode();
-#ifdef CONFIG_OPPO_CHARGER_MTK
-	if (boot_mode == META_BOOT || boot_mode == FACTORY_BOOT
-		|| boot_mode == ADVMETA_BOOT || boot_mode == ATE_FACTORY_BOOT){
-		chg_debug(" boot_mode:%d, return\n",boot_mode);
-		return true;
-	} else {
-		chg_debug(" boot_mode:%d, return false\n",boot_mode);
-		return false;
-	}
-#else
 	if(boot_mode == MSM_BOOT_MODE__RF || boot_mode == MSM_BOOT_MODE__WLAN || boot_mode == MSM_BOOT_MODE__FACTORY){
 		chg_debug(" boot_mode:%d, return\n",boot_mode);
 		return true;
@@ -3399,21 +3146,7 @@ int oppo_is_rf_ftm_mode(void)
 		chg_debug(" boot_mode:%d, return false\n",boot_mode);
 		return false;
 	}
-#endif
 }
-
-#ifdef CONFIG_OPPO_CHARGER_MTK
-
-int oppo_get_prop_status(void)
-{
-        if (!g_charger_chip) {
-                return 0;
-        } else {
-                return g_charger_chip->prop_status;
-        }
-}
-
-#endif
 
 #define OPPO_TBATT_HIGH_PWROFF_COUNT            (18)
 #define OPPO_TBATT_EMERGENCY_PWROFF_COUNT        (6)

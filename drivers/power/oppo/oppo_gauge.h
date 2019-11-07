@@ -91,10 +91,4 @@ int oppo_gauge_get_prev_remaining_capacity(void);
 int oppo_gauge_update_battery_dod0(void);
 int oppo_gauge_update_soc_smooth_parameter(void);
 
-#if defined(CONFIG_OPPO_CHARGER_MTK6763) || defined(CONFIG_OPPO_CHARGER_MTK6771)
-extern int oppo_fuelgauged_init_flag;
-extern struct power_supply	*oppo_batt_psy;
-extern struct power_supply	*oppo_usb_psy;
-extern struct power_supply	*oppo_ac_psy;
-#endif /* CONFIG_OPPO_CHARGER_MTK6763 */
 #endif /* _OPPO_GAUGE_H */

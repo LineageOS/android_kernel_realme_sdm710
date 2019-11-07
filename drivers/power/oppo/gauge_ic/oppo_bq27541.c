@@ -14,37 +14,6 @@
 * <version>           <date>                <author>                             <desc>
 * Revision 1.0        2015-06-22        Fanhong.Kong@ProDrv.CHG           Created for new architecture
 ************************************************************************************************************/
-#ifdef CONFIG_OPPO_CHARGER_MTK
-#include <linux/interrupt.h>
-#include <linux/i2c.h>
-#include <linux/slab.h>
-#include <linux/irq.h>
-#include <linux/miscdevice.h>
-#include <asm/uaccess.h>
-#include <linux/delay.h>
-#include <linux/input.h>
-#include <linux/workqueue.h>
-#include <linux/kobject.h>
-#include <linux/platform_device.h>
-#include <asm/atomic.h>
-#include <asm/unaligned.h>
-#include <linux/module.h>
-#include <linux/xlog.h>
-//#include <mt-plat/mtk_gpio.h>
-//#include <upmu_common.h>
-//#include <linux/irqchip/mtk-eic.h>
-#include <linux/power_supply.h>
-
-//nclude <linux/wakelock.h>
-#include <linux/gpio.h>
-
-//#include <mt-plat/battery_meter.h>
-//#include <mt-plat/charging.h>
-#include <mt-plat/charger_type.h>
-//#include <mt-plat/battery_common.h>
-#include <soc/oppo/device_info.h>
-
-#else
 #include <linux/i2c.h>
 #include <linux/debugfs.h>
 #include <linux/gpio.h>
@@ -62,9 +31,6 @@
 #include <linux/regulator/of_regulator.h>
 #include <linux/regulator/machine.h>
 #include <soc/oppo/device_info.h>
-
-#endif
-
 
 #include "../oppo_charger.h"
 #include "../oppo_gauge.h"

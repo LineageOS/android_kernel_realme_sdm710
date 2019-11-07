@@ -69,7 +69,7 @@ struct vreg_config {
 
 static const struct vreg_config const vreg_conf[] = {
         { "vdd_io", 1800000UL, 1800000UL, 6000, },
-        { "vmch", 2960000UL, 2960000UL, 10000, },			
+        { "vmch", 2960000UL, 2960000UL, 10000, },
 };
 
 struct fpc1020_data {
@@ -79,11 +79,7 @@ struct fpc1020_data {
         int irq_num;
         struct mutex lock;
         bool prepared;
-
-#ifdef VENDOR_EDIT
-        /*ziqing.guo@BasicDrv.Sensor, 2016/01/26, modify for enable/disable irq*/
         int irq_enabled;
-#endif
 
         struct pinctrl                                  *ts_pinctrl;
         struct pinctrl_state                *gpio_state_active;
@@ -180,9 +176,6 @@ found:
         }
         return rc;
 }
-
-#ifdef VENDOR_EDIT
-/* ziqing.guo@BasicDrv.Sensor, 2016/01/26, modify for enable/disable irq */
 static DEFINE_SPINLOCK(fpc1020_lock);
 
 static int fpc1020_enable_irq(struct fpc1020_data *fpc1020, bool enable)
@@ -211,7 +204,6 @@ static int fpc1020_enable_irq(struct fpc1020_data *fpc1020, bool enable)
 
         return 0;
 }
-#endif
 
 /**
  * sysf node to check the interrupt status of the sensor, the interrupt
@@ -265,8 +257,6 @@ static ssize_t regulator_enable_set(struct device *dev,
         return rc ? rc : count;
 }
 
-#ifdef VENDOR_EDIT
-/* ziqing.guo@BasicDrv.Sensor, 2016/01/26, modify for enable/disable irq */
 static ssize_t irq_enable_set(struct device *dev,
                 struct device_attribute *attribute, const char *buffer, size_t count)
 {
@@ -296,7 +286,6 @@ static ssize_t irq_enable_get(struct device *dev,
         struct fpc1020_data* fpc1020 = dev_get_drvdata(dev);
         return scnprintf(buffer, PAGE_SIZE, "%i\n", fpc1020->irq_enabled);
 }
-#endif
 
 static ssize_t wakelock_enable_set(struct device *dev,
                 struct device_attribute *attribute, const char *buffer, size_t count)
@@ -327,12 +316,7 @@ static ssize_t wakelock_enable_set(struct device *dev,
 
 static DEVICE_ATTR(irq, S_IRUSR | S_IWUSR, irq_get, irq_ack);
 static DEVICE_ATTR(regulator_enable, S_IWUSR, NULL, regulator_enable_set);
-
-#ifdef VENDOR_EDIT
-/* ziqing.guo@BasicDrv.Sensor, 2016/01/26, modify for enable/disable irq */
 static DEVICE_ATTR(irq_enable, S_IWUSR, irq_enable_get, irq_enable_set);
-#endif
-
 static DEVICE_ATTR(wakelock_enable, S_IWUSR, NULL, wakelock_enable_set);
 
 static struct attribute *attributes[] = {
@@ -444,11 +428,9 @@ static int fpc1020_probe(struct platform_device *pdev)
         /* Request that the interrupt should be wakeable */
         /*enable_irq_wake( gpio_to_irq( fpc1020->irq_gpio ) );*/
 
-#ifdef VENDOR_EDIT
         /*ziqing.guo@BasicDrv.Sensor, 2016/01/26, modify for enable/disable irq*/
         disable_irq_nosync(gpio_to_irq(fpc1020->irq_gpio));
         fpc1020->irq_enabled = 0;
-#endif
 
         rc = sysfs_create_group(&dev->kobj, &attribute_group);
         if (rc) {

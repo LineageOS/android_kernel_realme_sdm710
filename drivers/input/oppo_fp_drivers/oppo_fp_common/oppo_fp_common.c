@@ -29,13 +29,7 @@
 
 #include <linux/module.h>
 #include <linux/proc_fs.h>
-#if CONFIG_OPPO_FINGERPRINT_PLATFORM == 6763 || CONFIG_OPPO_FINGERPRINT_PLATFORM == 6771 || CONFIG_OPPO_FINGERPRINT_PLATFORM == 6779
-#include <sec_boot_lib.h>
-#elif CONFIG_OPPO_FINGERPRINT_PLATFORM == 855
-#include <linux/uaccess.h>
-#else
 #include <soc/qcom/smem.h>
-#endif
 #include <soc/oppo/oppo_project.h>
 #include <linux/slab.h>
 #include <linux/seq_file.h>
@@ -469,10 +463,6 @@ static int oppo_fp_common_probe(struct platform_device *fp_dev)
     if (ret) {
         goto exit;
     }
-
-#if CONFIG_OPPO_FINGERPRINT_PLATFORM == 6763 || CONFIG_OPPO_FINGERPRINT_PLATFORM == 6771 || CONFIG_OPPO_FINGERPRINT_PLATFORM == 6779
-    msleep(20);
-#endif
 
     ret = fp_register_proc_fs(fp_data);
     if (ret) {
